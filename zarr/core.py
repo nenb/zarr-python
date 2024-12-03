@@ -2285,8 +2285,13 @@ class Array:
                 chunk.fill(value)
 
             else:
-                # ensure array is contiguous
-                chunk = value.astype(self._dtype, order=self._order, copy=False)
+
+                if self._dtype == "<V2":
+                    import ml_dtypes
+                    chunk = value.astype(ml_dtypes.bfloat16, order=self._order, copy=False)
+                else:
+                    # ensure array is contiguous
+                    chunk = value.astype(self._dtype, order=self._order, copy=False)
 
         else:
             # partially replace the contents of this chunk
