@@ -1321,6 +1321,11 @@ class Array:
         # check fields are sensible
         out_dtype = check_fields(fields, self._dtype)
 
+        if out_dtype == "<V2":
+            import ml_dtypes
+
+            out_dtype = ml_dtypes.bfloat16
+
         # determine output shape
         out_shape = indexer.shape
 
@@ -2370,7 +2375,12 @@ class Array:
         # special case object dtype, because incorrect handling can lead to
         # segfaults and other bad things happening
         if self._dtype != object:
-            chunk = chunk.view(self._dtype)
+            if self._dtype == "<V2":
+                import ml_dtypes
+
+                chunk = chunk.view(dtype=ml_dtypes.bfloat16)
+            else:
+                chunk = chunk.view(self._dtype)
         elif chunk.dtype != object:
             # If we end up here, someone must have hacked around with the filters.
             # We cannot deal with object arrays unless there is an object
