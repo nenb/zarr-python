@@ -50,6 +50,11 @@ SPECIAL_FLOATS_ENCODED = {
     "NaN": np.nan,
 }
 
+try:
+    import ml_dtypes
+except ImportError:
+    pass
+
 
 def parse_zarr_format(data: object) -> Literal[3]:
     if data == 3:
@@ -586,6 +591,7 @@ class DataType(Enum):
     float16 = "float16"
     float32 = "float32"
     float64 = "float64"
+    bfloat16 = "bfloat16"
     complex64 = "complex64"
     complex128 = "complex128"
     string = "string"
@@ -606,6 +612,7 @@ class DataType(Enum):
             DataType.float16: 2,
             DataType.float32: 4,
             DataType.float64: 8,
+            DataType.bfloat16: 2,
             DataType.complex64: 8,
             DataType.complex128: 16,
         }
@@ -633,6 +640,7 @@ class DataType(Enum):
             DataType.float16: "f2",
             DataType.float32: "f4",
             DataType.float64: "f8",
+            DataType.bfloat16: "bfloat16",
             DataType.complex64: "c8",
             DataType.complex128: "c16",
         }
@@ -662,24 +670,27 @@ class DataType(Enum):
             # numpy < 2.0 does not support vlen string dtype
             # so we fall back on object array of strings
             return DataType.string
-        dtype_to_data_type = {
-            "|b1": "bool",
-            "bool": "bool",
-            "|i1": "int8",
-            "<i2": "int16",
-            "<i4": "int32",
-            "<i8": "int64",
-            "|u1": "uint8",
-            "<u2": "uint16",
-            "<u4": "uint32",
-            "<u8": "uint64",
-            "<f2": "float16",
-            "<f4": "float32",
-            "<f8": "float64",
-            "<c8": "complex64",
-            "<c16": "complex128",
-        }
-        return DataType[dtype_to_data_type[dtype.str]]
+        elif  'v' not in dtype.str.lower():
+            dtype_to_data_type = {
+                "|b1": "bool",
+                "bool": "bool",
+                "|i1": "int8",
+                "<i2": "int16",
+                "<i4": "int32",
+                "<i8": "int64",
+                "|u1": "uint8",
+                "<u2": "uint16",
+                "<u4": "uint32",
+                "<u8": "uint64",
+                "<f2": "float16",
+                "<f4": "float32",
+                "<f8": "float64",
+                "<c8": "complex64",
+                "<c16": "complex128",
+            }
+            return DataType[dtype_to_data_type[dtype.str]]
+        return DataType[dtype.name]
+
 
     @classmethod
     def parse(cls, dtype: DataType | Any | None) -> DataType:
