@@ -21,7 +21,12 @@ from typing import (
     cast,
     runtime_checkable,
 )
-
+try:
+    # NOTE: used here for several importing modules
+    # registers new dtypes for numpy if available
+    import ml_dtypes
+except ImportError:
+    pass
 import numpy as np
 import numpy.typing as npt
 

@@ -5,6 +5,11 @@ import dataclasses
 import warnings
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+try:
+    # registers new dtypes for numpy if available
+    import ml_dtypes
+except ImportError:
+    pass
 import numpy as np
 import numpy.typing as npt
 from typing_extensions import deprecated

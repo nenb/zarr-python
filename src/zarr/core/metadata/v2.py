@@ -22,6 +22,12 @@ import json
 from dataclasses import dataclass, field, fields, replace
 
 import numcodecs
+try:
+    # NOTE: used here for several importing modules
+    # registers new dtypes for numpy if available
+    import ml_dtypes
+except ImportError:
+    pass
 import numpy as np
 
 from zarr.core.array_spec import ArrayConfig, ArraySpec

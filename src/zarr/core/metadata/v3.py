@@ -20,6 +20,12 @@ from enum import Enum
 from typing import Any, Literal, cast
 
 import numcodecs.abc
+try:
+    # NOTE: used here for several importing modules
+    # registers new dtypes for numpy if available
+    import ml_dtypes
+except ImportError:
+    pass
 import numpy as np
 import numpy.typing as npt
 

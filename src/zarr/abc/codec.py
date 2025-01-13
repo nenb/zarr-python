@@ -49,7 +49,9 @@ class BaseCodec(Metadata, Generic[CodecInput, CodecOutput]):
     is_fixed_size: bool
 
     @abstractmethod
-    def compute_encoded_size(self, input_byte_length: int, chunk_spec: ArraySpec) -> int:
+    def compute_encoded_size(
+        self, input_byte_length: int, chunk_spec: ArraySpec
+    ) -> int:
         """Given an input byte length, this method returns the output byte length.
         Raises a NotImplementedError for codecs with variable-sized outputs (e.g. compressors).
 
@@ -93,7 +95,9 @@ class BaseCodec(Metadata, Generic[CodecInput, CodecOutput]):
         """
         return self
 
-    def validate(self, *, shape: ChunkCoords, dtype: np.dtype[Any], chunk_grid: ChunkGrid) -> None:
+    def validate(
+        self, *, shape: ChunkCoords, dtype: np.dtype[Any], chunk_grid: ChunkGrid
+    ) -> None:
         """Validates that the codec configuration is compatible with the array metadata.
         Raises errors when the codec configuration is not compatible.
 
@@ -107,7 +111,9 @@ class BaseCodec(Metadata, Generic[CodecInput, CodecOutput]):
             The array chunk grid
         """
 
-    async def _decode_single(self, chunk_data: CodecOutput, chunk_spec: ArraySpec) -> CodecInput:
+    async def _decode_single(
+        self, chunk_data: CodecOutput, chunk_spec: ArraySpec
+    ) -> CodecInput:
         raise NotImplementedError
 
     async def decode(
@@ -285,7 +291,9 @@ class CodecPipeline:
     def supports_partial_encode(self) -> bool: ...
 
     @abstractmethod
-    def validate(self, *, shape: ChunkCoords, dtype: np.dtype[Any], chunk_grid: ChunkGrid) -> None:
+    def validate(
+        self, *, shape: ChunkCoords, dtype: np.dtype[Any], chunk_grid: ChunkGrid
+    ) -> None:
         """Validates that all codec configurations are compatible with the array metadata.
         Raises errors when a codec configuration is not compatible.
 
@@ -357,7 +365,9 @@ class CodecPipeline:
     @abstractmethod
     async def read(
         self,
-        batch_info: Iterable[tuple[ByteGetter, ArraySpec, SelectorTuple, SelectorTuple]],
+        batch_info: Iterable[
+            tuple[ByteGetter, ArraySpec, SelectorTuple, SelectorTuple]
+        ],
         out: NDBuffer,
         drop_axes: tuple[int, ...] = (),
     ) -> None:
@@ -379,7 +389,9 @@ class CodecPipeline:
     @abstractmethod
     async def write(
         self,
-        batch_info: Iterable[tuple[ByteSetter, ArraySpec, SelectorTuple, SelectorTuple]],
+        batch_info: Iterable[
+            tuple[ByteSetter, ArraySpec, SelectorTuple, SelectorTuple]
+        ],
         value: NDBuffer,
         drop_axes: tuple[int, ...] = (),
     ) -> None:
@@ -414,7 +426,9 @@ async def _batching_helper(
 def _noop_for_none(
     func: Callable[[CodecInput, ArraySpec], Awaitable[CodecOutput | None]],
 ) -> Callable[[CodecInput | None, ArraySpec], Awaitable[CodecOutput | None]]:
-    async def wrap(chunk: CodecInput | None, chunk_spec: ArraySpec) -> CodecOutput | None:
+    async def wrap(
+        chunk: CodecInput | None, chunk_spec: ArraySpec
+    ) -> CodecOutput | None:
         if chunk is None:
             return None
         return await func(chunk, chunk_spec)

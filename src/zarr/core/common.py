@@ -15,7 +15,12 @@ from typing import (
     cast,
     overload,
 )
-
+try:
+    # NOTE: used here for several importing modules
+    # registers new dtypes for numpy if available
+    import ml_dtypes
+except ImportError:
+    pass
 import numpy as np
 
 from zarr.core.config import config as zarr_config
