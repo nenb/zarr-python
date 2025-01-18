@@ -180,6 +180,7 @@ def parse_dtype(dtype: Any, zarr_format: ZarrFormat) -> np.dtype[Any]:
             return np.dtype("object")
         else:
             return _STRING_DTYPE
+    # NOTE: should there be a helpful error raised here?
     return np.dtype(dtype)
 
 

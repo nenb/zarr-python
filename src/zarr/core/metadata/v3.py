@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, TypedDict, overload
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Callable, ClassVar, TypedDict, overload
 
 from zarr.abc.metadata import Metadata
 from zarr.core.buffer.core import default_buffer_prototype
@@ -20,6 +21,7 @@ from enum import Enum
 from typing import Any, Literal, cast
 
 import numcodecs.abc
+
 try:
     # NOTE: used here for several importing modules
     # registers new dtypes for numpy if available
@@ -89,7 +91,9 @@ def parse_codecs(data: object) -> tuple[Codec, ...]:
 
 def validate_array_bytes_codec(codecs: tuple[Codec, ...]) -> ArrayBytesCodec:
     # ensure that we have at least one ArrayBytesCodec
-    abcs: list[ArrayBytesCodec] = [codec for codec in codecs if isinstance(codec, ArrayBytesCodec)]
+    abcs: list[ArrayBytesCodec] = [
+        codec for codec in codecs if isinstance(codec, ArrayBytesCodec)
+    ]
     if len(abcs) == 0:
         raise ValueError("At least one ArrayBytesCodec is required.")
     elif len(abcs) > 1:
@@ -124,7 +128,9 @@ def validate_codecs(codecs: tuple[Codec, ...], dtype: DataType) -> None:
 def parse_dimension_names(data: object) -> tuple[str | None, ...] | None:
     if data is None:
         return data
-    elif isinstance(data, Iterable) and all(isinstance(x, type(None) | str) for x in data):
+    elif isinstance(data, Iterable) and all(
+        isinstance(x, type(None) | str) for x in data
+    ):
         return tuple(data)
     else:
         msg = f"Expected either None or a iterable of str, got {type(data)}"
@@ -269,7 +275,9 @@ class ArrayV3Metadata(Metadata):
             config=ArrayConfig.from_dict({}),  # TODO: config is not needed here.
             prototype=default_buffer_prototype(),  # TODO: prototype is not needed here.
         )
-        codecs_parsed = tuple(c.evolve_from_array_spec(array_spec) for c in codecs_parsed_partial)
+        codecs_parsed = tuple(
+            c.evolve_from_array_spec(array_spec) for c in codecs_parsed_partial
+        )
         validate_codecs(codecs_parsed_partial, data_type_parsed)
 
         object.__setattr__(self, "shape", shape_parsed)
@@ -291,7 +299,9 @@ class ArrayV3Metadata(Metadata):
             raise ValueError(
                 "`chunk_shape` and `shape` need to have the same number of dimensions."
             )
-        if self.dimension_names is not None and len(self.shape) != len(self.dimension_names):
+        if self.dimension_names is not None and len(self.shape) != len(
+            self.dimension_names
+        ):
             raise ValueError(
                 "`dimension_names` and `shape` need to have the same number of dimensions."
             )
@@ -299,7 +309,9 @@ class ArrayV3Metadata(Metadata):
             raise ValueError("`fill_value` is required.")
         for codec in self.codecs:
             codec.validate(
-                shape=self.shape, dtype=self.data_type.to_numpy(), chunk_grid=self.chunk_grid
+                shape=self.shape,
+                dtype=self.data_type.to_numpy(),
+                chunk_grid=self.chunk_grid,
             )
 
     @property
@@ -355,7 +367,10 @@ class ArrayV3Metadata(Metadata):
         return self.codecs
 
     def get_chunk_spec(
-        self, _chunk_coords: ChunkCoords, array_config: ArrayConfig, prototype: BufferPrototype
+        self,
+        _chunk_coords: ChunkCoords,
+        array_config: ArrayConfig,
+        prototype: BufferPrototype,
     ) -> ArraySpec:
         assert isinstance(
             self.chunk_grid, RegularChunkGrid
@@ -373,7 +388,11 @@ class ArrayV3Metadata(Metadata):
 
     def to_buffer_dict(self, prototype: BufferPrototype) -> dict[str, Buffer]:
         d = _replace_special_floats(self.to_dict())
-        return {ZARR_JSON: prototype.buffer.from_bytes(json.dumps(d, cls=V3JsonEncoder).encode())}
+        return {
+            ZARR_JSON: prototype.buffer.from_bytes(
+                json.dumps(d, cls=V3JsonEncoder).encode()
+            )
+        }
 
     @classmethod
     def from_dict(cls, data: dict[str, JSON]) -> Self:
@@ -418,8 +437,19 @@ class ArrayV3Metadata(Metadata):
 
 BOOL_DTYPE = Literal["bool"]
 BOOL = np.bool_
-INTEGER_DTYPE = Literal["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
-INTEGER = np.int8 | np.int16 | np.int32 | np.int64 | np.uint8 | np.uint16 | np.uint32 | np.uint64
+INTEGER_DTYPE = Literal[
+    "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"
+]
+INTEGER = (
+    np.int8
+    | np.int16
+    | np.int32
+    | np.int64
+    | np.uint8
+    | np.uint16
+    | np.uint32
+    | np.uint64
+)
 FLOAT_DTYPE = Literal["float16", "float32", "float64"]
 FLOAT = np.float16 | np.float32 | np.float64
 COMPLEX_DTYPE = Literal["complex64", "complex128"]
@@ -429,7 +459,14 @@ STRING = np.str_
 BYTES_DTYPE = Literal["bytes"]
 BYTES = np.bytes_
 
-ALL_DTYPES = BOOL_DTYPE | INTEGER_DTYPE | FLOAT_DTYPE | COMPLEX_DTYPE | STRING_DTYPE | BYTES_DTYPE
+ALL_DTYPES = (
+    BOOL_DTYPE
+    | INTEGER_DTYPE
+    | FLOAT_DTYPE
+    | COMPLEX_DTYPE
+    | STRING_DTYPE
+    | BYTES_DTYPE
+)
 
 
 @overload
@@ -537,7 +574,9 @@ def parse_fill_value(
             warnings.filterwarnings("ignore", category=DeprecationWarning)
             casted_value = np.dtype(np_dtype).type(fill_value)
     except (ValueError, OverflowError, TypeError) as e:
-        raise ValueError(f"fill value {fill_value!r} is not valid for dtype {data_type}") from e
+        raise ValueError(
+            f"fill value {fill_value!r} is not valid for dtype {data_type}"
+        ) from e
     # Check if the value is still representable by the dtype
     if (fill_value == "NaN" and np.isnan(casted_value)) or (
         fill_value in ["Infinity", "-Infinity"] and not np.isfinite(casted_value)
@@ -548,7 +587,9 @@ def parse_fill_value(
         # so we use np.isclose for this comparison.
         # this also allows us to compare nan fill_values
         if not np.isclose(fill_value, casted_value, equal_nan=True):
-            raise ValueError(f"fill value {fill_value!r} is not valid for dtype {data_type}")
+            raise ValueError(
+                f"fill value {fill_value!r} is not valid for dtype {data_type}"
+            )
     elif np_dtype.kind == "c":
         # confusingly np.isclose(np.inf, np.inf + 0j) is False on numpy<2, so compare real and imag parts
         # explicitly.
@@ -556,10 +597,14 @@ def parse_fill_value(
             np.isclose(np.real(fill_value), np.real(casted_value), equal_nan=True)
             and np.isclose(np.imag(fill_value), np.imag(casted_value), equal_nan=True)
         ):
-            raise ValueError(f"fill value {fill_value!r} is not valid for dtype {data_type}")
+            raise ValueError(
+                f"fill value {fill_value!r} is not valid for dtype {data_type}"
+            )
     else:
         if fill_value != casted_value:
-            raise ValueError(f"fill value {fill_value!r} is not valid for dtype {data_type}")
+            raise ValueError(
+                f"fill value {fill_value!r} is not valid for dtype {data_type}"
+            )
 
     return casted_value
 
@@ -654,6 +699,7 @@ class DataType(Enum):
         elif self == DataType.bytes:
             # for now always use object dtype for bytestrings
             # TODO: consider whether we can use fixed-width types (e.g. '|S5') instead
+            # NOTE: why not make this 'V' for void type (opaque binary data)?
             return np.dtype("O")
         else:
             return np.dtype(self.to_numpy_shortname())
@@ -707,3 +753,127 @@ class DataType(Enum):
         except KeyError as e:
             raise ValueError(f"Invalid Zarr format 3 data_type: {dtype}") from e
         return data_type
+
+
+# need to define an interface that can be used elsewhere in codebase
+
+# WANT IT TO BE COMPLETELY STANDALONE AND TO BE ABLE TO INSTALL ITSELF
+
+_zarr_v3_core_dtypes = {
+    "bool",
+    "int8",
+    "int16",
+    "int32",
+    "int64",
+    "uint8",
+    "unit16",
+    "uint32",
+    "uint64",
+    "float16",
+    "float32",
+    "float64",
+    "complex64",
+    "complex128",
+}
+
+
+# TODO
+# 1: zarr register forms name from endianness and spec_identifier and checks it is not already registered
+# 2a: register also contains a map from np.dtype to zarr register name - method like _create can convert to np.dtype and then use this to return ZarrV3DType -> MAYBE NOT REGISTER BUT ON DATACLASS
+# 2b: should check also that np.dtype does not already exist EXCEPT for 'VX' ('VX' can ultimately be an escape hatch)
+# 3a: How to deal with variable byte_count e.g. strings or buffers?
+# 3b: Have some logic in _create etc to automatically register a 'S[N]' datatype if it's passed?
+# 4: How to deal with different versions of numpy support for strings?
+# 5: How to handle V and loading correctly with other formats e.g. int4 in pytorch? Remember that V will be overloaded as many types will likely have the same numpy represetnation.
+@dataclass(frozen=True)
+class ZarrV3DType:
+    _zarr_v3_core_dtypes: ClassVar[set[str]] = _zarr_v3_core_dtypes
+
+    zarr_v3_spec_identifier: str  # how this dtype is identified in core spec
+    experimental: bool  # is this in the core spec or not
+    endianness: Literal[
+        "big", "little", None
+    ]  # None indicates not defined i.e. single byte
+    byte_count: int | None  # None indicates variable count
+
+    configuration: dict | None = (
+        None  # relevant for constructing dtypes not compatible with numpy e.g. bit-packed or for versioning an experimental dtype. Could potentially be used by another backend like torch?
+    )
+
+    zarr_to_numpy_dtype: Callable[[], np.dtype[Any]] | None = (
+        None  # logic required for returning numpy dtype; may require numpy extension install
+    )
+
+    def __post_init__(self):
+        if self.byte_count is not None and self.byte_count <= 0:
+            raise ValueError("byte_count must be a positive integer.")
+
+        if self.byte_count == 1 and self.endianness is not None:
+            raise ValueError("Endianness must be None for single-byte types.")
+
+        if self.endianness is None:
+            if self.byte_count != 1:
+                raise ValueError(
+                    "byte_count must be one when endianness is set to None."
+                )
+
+        if self.experimental:
+            assert self.zarr_v3_spec_identifier not in self._zarr_v3_core_dtypes
+        else:
+            assert self.zarr_v3_spec_identifier in self._zarr_v3_core_dtypes
+
+    def to_numpy(self) -> np.dtype[Any]:
+        """
+        Convert a Zarr V3 data type to a NumPy-recognized dtype.
+
+        This method converts a Zarr V3 data type specification into a corresponding
+        NumPy dtype. It is intended for use when converting a buffer returned by
+        a Zarr store into a NumPy array. If the data type is experimental and not
+        directly supported by NumPy, the method raises a descriptive exception.
+
+        Returns:
+            np.dtype: The NumPy dtype corresponding to the Zarr V3 data type.
+
+        Raises:
+            ValueError: If the Zarr V3 data type is not recognized by NumPy.
+            ValueError: If an experimental Zarr data type is used but not supported
+                        by NumPy.
+
+        Notes:
+            - If `zarr_to_numpy_dtype` is defined, it is used instead to return
+            the dtype.
+        """
+        if self.zarr_to_numpy_dtype is not None:
+            return self.zarr_to_numpy_dtype()
+        else:
+            try:
+                dtype = np.dtype(self.zarr_v3_spec_identifier)
+            except TypeError as e:
+                if self.experimental:
+                    raise ValueError(
+                        f"{self.zarr_v3_spec_identifier} is an experimental zarr dtype and not recognised by numpy. Please consult the documentation on how this dtype should be used."
+                    ) from e
+                else:
+                    # will only reach here if zarr core data type identifiers are changed - highly unlikely
+                    raise ValueError(
+                        f"The Zarr V3 data type identifier {self.zarr_v3_spec_identifier} was not recognised by numpy."
+                    )
+
+            if self.endianness:
+                if self.endianness == "big":
+                    return dtype.newbyteorder(">")
+                elif self.endianness == "little":
+                    return dtype.newbyteorder("<")
+            else:
+                return dtype
+
+
+# potentially need to search for all references to "<" and ">" and fix these
+# not sure of status of endianess - several open issues. seems like it should be passed as a codec?
+# and default (e.g. flaot16) always means little-endian.
+
+# would like to learn some things from codec experience
+# i.e. give users space and freedom to play around with new extensions, and then if enough
+# interest can propose a ZEP etc. don't want to have to propose a ZEP or get merged
+# to main to be able to experiment.
+DTYPE_REGISTRY = {}  # this should follow the register_codec pattern
