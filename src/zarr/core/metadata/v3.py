@@ -473,42 +473,48 @@ ALL_DTYPES = (
 def parse_fill_value(
     fill_value: complex | str | bytes | np.generic | Sequence[Any] | bool,
     dtype: BOOL_DTYPE,
-) -> BOOL: ...
+) -> BOOL:
+    ...
 
 
 @overload
 def parse_fill_value(
     fill_value: complex | str | bytes | np.generic | Sequence[Any] | bool,
     dtype: INTEGER_DTYPE,
-) -> INTEGER: ...
+) -> INTEGER:
+    ...
 
 
 @overload
 def parse_fill_value(
     fill_value: complex | str | bytes | np.generic | Sequence[Any] | bool,
     dtype: FLOAT_DTYPE,
-) -> FLOAT: ...
+) -> FLOAT:
+    ...
 
 
 @overload
 def parse_fill_value(
     fill_value: complex | str | bytes | np.generic | Sequence[Any] | bool,
     dtype: COMPLEX_DTYPE,
-) -> COMPLEX: ...
+) -> COMPLEX:
+    ...
 
 
 @overload
 def parse_fill_value(
     fill_value: complex | str | bytes | np.generic | Sequence[Any] | bool,
     dtype: STRING_DTYPE,
-) -> STRING: ...
+) -> STRING:
+    ...
 
 
 @overload
 def parse_fill_value(
     fill_value: complex | str | bytes | np.generic | Sequence[Any] | bool,
     dtype: BYTES_DTYPE,
-) -> BYTES: ...
+) -> BYTES:
+    ...
 
 
 def parse_fill_value(
@@ -755,10 +761,6 @@ class DataType(Enum):
         return data_type
 
 
-# need to define an interface that can be used elsewhere in codebase
-
-# WANT IT TO BE COMPLETELY STANDALONE AND TO BE ABLE TO INSTALL ITSELF
-
 _zarr_v3_core_dtypes = {
     "bool",
     "int8",
@@ -775,6 +777,17 @@ _zarr_v3_core_dtypes = {
     "complex64",
     "complex128",
 }
+
+
+# numpy v2 stings are object dtype (var legnth)
+# void dtype stores arbitrary bytes - these *could* be text strings, but also more general. Required for things like int4.
+# U[N] dtype means N unicode characters. numpy always uses UTF-32 encoding, so this means N*4 bytes. UTF-8 is var length of 1-4.
+# S dtype stores arbitrat raw bytes. S[N] means N raw bytes on disk
+# ASIDE: Goal of zarr is to store information on disk, not to hae to support memory representations e.g. flatbuffer convert of string
+# ASIDE: One on disk use-case is fixed-lwidth strings. Will have bytes on disk ('lets say utf-8 etc specified as codec'). Try numpy2 for utf-8 codec, else warn that using numpy1 and inefficient conversion going to happen.
+# Other use-case is variable length strings. Again saved to disk as bytes. Use codec to parse. What happens if numpy can't support?
+# CURRENT STATUS
+# zarr supports fixed width bytestrings. codecs are used to convert to utf-8 etc. represented as U if Unicode, otherwise needs to be V (and no numpy support)
 
 
 # TODO
@@ -796,13 +809,11 @@ class ZarrV3DType:
     ]  # None indicates not defined i.e. single byte
     byte_count: int | None  # None indicates variable count
 
-    configuration: dict | None = (
-        None  # relevant for constructing dtypes not compatible with numpy e.g. bit-packed or for versioning an experimental dtype. Could potentially be used by another backend like torch?
-    )
+    configuration: dict | None = None  # relevant for constructing dtypes not compatible with numpy e.g. bit-packed or for versioning an experimental dtype. Could potentially be used by another backend like torch?
 
-    zarr_to_numpy_dtype: Callable[[], np.dtype[Any]] | None = (
-        None  # logic required for returning numpy dtype; may require numpy extension install
-    )
+    zarr_to_numpy_dtype: Callable[
+        [], np.dtype[Any]
+    ] | None = None  # logic required for returning numpy dtype; may require numpy extension install
 
     def __post_init__(self):
         if self.byte_count is not None and self.byte_count <= 0:
@@ -871,6 +882,11 @@ class ZarrV3DType:
 # potentially need to search for all references to "<" and ">" and fix these
 # not sure of status of endianess - several open issues. seems like it should be passed as a codec?
 # and default (e.g. flaot16) always means little-endian.
+
+
+# need to define an interface that can be used elsewhere in codebase
+
+# WANT IT TO BE COMPLETELY STANDALONE AND TO BE ABLE TO INSTALL ITSELF
 
 # would like to learn some things from codec experience
 # i.e. give users space and freedom to play around with new extensions, and then if enough
