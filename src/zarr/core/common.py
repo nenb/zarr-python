@@ -24,6 +24,10 @@ from zarr.core.strings import _STRING_DTYPE
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterator
 
+try:
+    import ml_dtypes
+except ImportError:
+    pass
 
 ZARR_JSON = "zarr.json"
 ZARRAY_JSON = ".zarray"
